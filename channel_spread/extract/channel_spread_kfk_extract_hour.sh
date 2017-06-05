@@ -57,7 +57,7 @@ hdfs_source_dir=/log/source/others/td_channel_spread
 run_class=com.yixia.bigdata.etl.TdChannelSpreadParser
 run_extract_job_name=com.yixia.bigdata.etl.TdChannelSpreadParser.${cdate}.${chour}
 run_queue=$extract_queue
-run_jar=/home/rec/data/bigdata2/etl/yzb/channel_spread/jar/channel_spread.jar
+run_jar=/home/rec/data/bigdata2/etl/yzb/channel_spread/jar/etl_2.11-1.0.jar
 
 # 2.3 验证当天该小时段Source源数据中 _SUCCESS 文件是否存在；
 # 如果不存在，且参数非近两小时，则：强制退出运行；否则：循环30次（每次sleep 4分钟)验证 _SUCCESS 文件是否存在
@@ -115,7 +115,7 @@ fi
 --name $run_extract_job_name \
 --master yarn \
 --queue $run_queue \
-$run_jar $hdfs_source_dir/$cdate/$chour ${hive_warehouse}/${hive_db_name}.db/${hive_tb_name}/dt=${cdate}/hour=${chour}
+$run_jar $hdfs_source_dir/$cdate/$chour ${hive_warehouse}/${hive_db_name}.db/${hive_tb_name}/dt=${cdate}/hour=${chour} 1
 if [ $? -ne 0 ]
 then
     sendmessage "wechat,mail" "error" "yzb api_playback extract error(${cdate}:${chour})" "yzb api_playback extract job:${run_extract_job_name} failed!"  ${mail_extract}
