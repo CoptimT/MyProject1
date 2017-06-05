@@ -8,7 +8,6 @@ source $config_dir/spark_conf.sh
 # 获取Kerberos票据
 reckinit=$reckinit
 /usr/bin/kinit -k -t $reckinit
-
 # -----------------------------------------------------------------------------------------------------------------
 # 1. 参数验证
 # 1.1 过期数据设置
