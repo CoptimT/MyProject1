@@ -1,69 +1,59 @@
 <workflow-app xmlns="uri:oozie:workflow:0.2" name="channel-spread-wf">
-<start to="import_xk_member_device_faid_node"/>
+	<start to="hive_channel_spread_prepare_node"/>
 
-<!-- 导入MySQL表 -->
-<action name="import_xk_member_device_faid_node">
-	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<command>import --connect ${jdbc} --username ${username} --password ${password} --table xk_member_device_faid -m 2 --as-textfile --hive-import --hive-drop-import-delims --hive-overwrite --hive-table dwv_yzb.dwv_yzb_xk_member_device_faid  --split-by createtime --delete-target-dir</command>
-	</sqoop>
-	<ok to="end"/>
-	<error to="sendmail"/>
-</action>
+	<!-- 导入MySQL表 因为集群白名单未开，不能导表 -->
+	<action name="import_xk_member_device_faid_node">
+		<sqoop xmlns="uri:oozie:sqoop-action:0.2">
+			<job-tracker>${jobTracker}</job-tracker>
+			<name-node>${nameNode}</name-node>
+			<job-xml>my-hive-default.xml</job-xml>
+			<command>import --connect ${jdbc} --username ${username} --password ${password} --table xk_member_device_faid -m 2 --as-textfile --hive-import --hive-drop-import-delims --hive-overwrite --hive-table dwv_yzb.dwv_yzb_xk_member_device_faid  --split-by createtime --delete-target-dir</command>
+		</sqoop>
+		<ok to="end"/>
+		<error to="sendmail"/>
+	</action>
 
+	<!-- 1 数据准备，创建中间表 -->
+	<action name="hive_channel_spread_prepare_node">
+		<hive xmlns="uri:oozie:hive-action:0.2">
+			<job-tracker>${jobTracker}</job-tracker>
+			<name-node>${nameNode}</name-node>
+			<job-xml>my-hive-default.xml</job-xml>
+			<script>hql/channel_spread_prepare.sql</script>
+			<param>day=${day}</param>
+			<param>tomorrow=${tomorrow}</param>
+		</hive>
+		<ok to="hive_channel_spread_statistic_node" />
+		<error to="sendmail" />
+	</action>
 
-<!-- 导入流水表 -->
-<action name="import_wallet_node">
-	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<command>import --connect ${jdbc} --username ${username} --password ${password} --table xkx_wallet_log_new_${day} --hive-import --hive-overwrite --delete-target-dir --hive-table yx_datasync.xkx_wallet_log_new -m 2 --hive-partition-key day --hive-partition-value ${day}</command>
-	</sqoop>
-	<ok to="sync_inpour_table"/>
-	<error to="sendmail"/>
-</action>
+	<!-- 2 数据统计 -->
+	<action name="hive_channel_spread_statistic_node">
+		<hive xmlns="uri:oozie:hive-action:0.2">
+			<job-tracker>${jobTracker}</job-tracker>
+			<name-node>${nameNode}</name-node>
+			<job-xml>my-hive-default.xml</job-xml>
+			<script>hql/channel_spread_statistic.sql</script>
+			<param>day=${day}</param>
+			<param>yesterday=${yesterday}</param>
+		</hive>
+		<ok to="hive_channel_spread_drop_node" />
+		<error to="sendmail" />
+	</action>
 
-<!-- 导入订单表 -->
-<action name="sync_inpour_table">
-<sqoop xmlns="uri:oozie:sqoop-action:0.2">
-	<job-tracker>${jobTracker}</job-tracker>
-	<name-node>${nameNode}</name-node>
-	<job-xml>my-hive-default.xml</job-xml>
-	<command>import --connect ${jdbc} --username ${username} --password ${password} --table xk_inpour_order -m 10 --as-textfile --hive-import --hive-drop-import-delims --hive-overwrite  --hive-table yx_datasync.xk_inpour_order  --split-by memberid --delete-target-dir</command>
-</sqoop>
-<ok to="wallet_batch_forking"/>
-<error to="sendmail"/>
-</action>
+	<!-- 3 删除中间表 -->
+	<action name="hive_channel_spread_drop_node">
+		<hive xmlns="uri:oozie:hive-action:0.2">
+			<job-tracker>${jobTracker}</job-tracker>
+			<name-node>${nameNode}</name-node>
+			<job-xml>my-hive-default.xml</job-xml>
+			<script>hql/channel_spread_drop.sql</script>
+			<param>day=${day}</param>
+		</hive>
+		<ok to="end" />
+		<error to="sendmail" />
+	</action>
 
-<!--#### 流水和交易对账,并行的分支节点 begin（ wallet_batch_joining 节点结束）-->
-<fork name="wallet_batch_forking">
-
-	<!--1.流水对账-->
-	<path start="balance_serial_calc_hive_node"/>
-
-	<!--2.交易对账：除渠道充值外的交易对账 -->
-	<path start="wallet_without_channel_hive_node"/>
-
-	<!-- 3. 渠道充值交易对账 - -->
-	<path start="balance_wallet_node"/>
-</fork>
-
-<!-- 1. 流水对账 -->
-<!-- 1.1 流水对账 - 差错计算 -->
-<action name="balance_serial_calc_hive_node">
-	<hive xmlns="uri:oozie:hive-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<script>hql/balance_wallet_serial.sql</script>
-		<param>day=${day}</param>
-	</hive>
-	<ok to="balance_serial_sqoop_node" />
-	<error to="sendmail" />
-</action>
 <!-- 1.2 流水对账 - 差错数据导出 -->
 <action name="balance_serial_sqoop_node">
 	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
@@ -96,149 +86,7 @@
 	<error to="sendmail"/>
 </action>
 
-<!--2.交易对账：除渠道充值外的交易对账 -->
-<!-- 2.1 除渠道充值外的交易对账 - 差错计算 -->
-<action name="wallet_without_channel_hive_node">
-	<hive xmlns="uri:oozie:hive-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<script>hql/wallet_without_channel.sql</script>
-		<param>day=${day}</param>
-	</hive>
-	<ok to="wallet_without_channel_sqoop_node" />
-	<error to="sendmail" />
-</action>
-
-<!-- 2.2 除渠道充值外的交易对账 - 差错数据导出 -->
-<action name="wallet_without_channel_sqoop_node">
-	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-queue-default.xml</job-xml>
-		<arg>export</arg>
-		<arg>--connect</arg>
-		<arg>${jdbcRes}</arg>
-		<arg>--username</arg>
-		<arg>${usernameRes}</arg>
-		<arg>--password</arg>
-		<arg>${passwordRes}</arg>
-		<arg>--table</arg>
-		<arg>wallet_balance_order</arg>
-		<arg>--columns</arg>
-		<arg>serialid,deal_time,balance_time,createtime</arg>
-		<arg>-m</arg>
-		<arg>2</arg>
-		<arg>--export-dir</arg>
-		<arg>${hivehouse}/tmp_wallet_without_channel_balance/day=${day}</arg>
-		<arg>--input-fields-terminated-by</arg>
-		<arg>\001</arg>
-		<arg>--update-key</arg>
-		<arg>serialid</arg>
-		<arg>--update-mode</arg>
-		<arg>allowinsert</arg>
-	</sqoop>
-	<ok to="wallet_batch_joining"/>
-	<error to="sendmail"/>
-</action>
-
-<!-- 3. 渠道充值交易对账 - -->
-<action name="balance_wallet_node">
-	<hive xmlns="uri:oozie:hive-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<script>hql/wallet_balance.sql</script>
-		<param>day=${day}</param>
-	</hive>
-	<ok to="export_wallet_balance_order_node"/>
-	<error to="sendmail"/>
-</action>
-
-<action name="export_wallet_balance_order_node">
-	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<command>export --connect ${jdbcRes} --username ${usernameRes} --password ${passwordRes} --table wallet_balance_order --columns "orderid,deal_time,balance_time,createtime,serialid" --export-dir "/user/hive/warehouse/yx_middle.db/order_balance_${day}" --update-key id  --update-mode allowinsert --m 3 --fields-terminated-by "\001"</command>
-	</sqoop>
-	<ok to="export_wallet_balance_order_channel_node"/>
-	<error to="sendmail"/>
-</action>
-
-<action name="export_wallet_balance_order_channel_node">
-	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<command>export --connect ${jdbcRes} --username ${usernameRes} --password ${passwordRes} --table wallet_balance_order --columns "orderid,deal_time,balance_time,createtime,serialid" --export-dir "/user/hive/warehouse/yx_middle.db/order_balance_channel_${day}" --update-key id  --update-mode allowinsert --m 3 --fields-terminated-by "\001"</command>
-	</sqoop>
-	<ok to="wallet_batch_joining"/>
-	<error to="sendmail"/>
-</action>
-
-<!--#### 并行导出的分支节点 end -->
-<join name="wallet_batch_joining" to="wallet_balance_statistic_hive_node" />
-
-<!-- 4.1 - 交易结果统计 -->
-<action name="wallet_balance_statistic_hive_node">
-	<hive xmlns="uri:oozie:hive-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<script>hql/wallet_balance_statistic.sql</script>
-		<param>day=${day}</param>
-	</hive>
-	<ok to="wallet_balance_statistic_sqoop_node" />
-	<error to="sendmail" />
-</action>
-
-<!-- 4.2 交易结果统计数据导出 -->
-<action name="wallet_balance_statistic_sqoop_node">
-	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-queue-default.xml</job-xml>
-		<arg>export</arg>
-		<arg>--connect</arg>
-		<arg>${jdbcRes}</arg>
-		<arg>--username</arg>
-		<arg>${usernameRes}</arg>
-		<arg>--password</arg>
-		<arg>${passwordRes}</arg>
-		<arg>--table</arg>
-		<arg>wallet_balance_statistic</arg>
-		<arg>--columns</arg>
-		<arg>balance_time,type,balance_channel,balance_cnt,balance_error_cnt,createtime,updatetime</arg>
-		<arg>-m</arg>
-		<arg>2</arg>
-		<arg>--export-dir</arg>
-		<arg>${hivehouse}/tmp_wallet_balance_statistic/day=${day}</arg>
-		<arg>--input-fields-terminated-by</arg>
-		<arg>\001</arg>
-		<arg>--update-key</arg>
-		<arg>serialid</arg>
-		<arg>--update-mode</arg>
-		<arg>allowinsert</arg>
-	</sqoop>
-	<ok to="wallet_drop_hive_node"/>
-	<error to="sendmail"/>
-</action>
-
-<!-- 5 - 删除临时数据 -->
-<action name="wallet_drop_hive_node">
-	<hive xmlns="uri:oozie:hive-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-hive-default.xml</job-xml>
-		<script>hql/drop_partitions_serial.sql</script>
-		<param>day=${day}</param>
-	</hive>
-	<ok to="end" />
-	<error to="sendmail" />
-</action>
-
-<!--15.发送日志：send_mail_node -->
+<!-- 发送日志：send_mail_node -->
 <action name="sendmail">
 	<email xmlns="uri:oozie:email-action:0.1">
 		<to>${toEmail}</to>
