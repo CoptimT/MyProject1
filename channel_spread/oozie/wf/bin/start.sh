@@ -38,7 +38,7 @@ echo `date`  dump mysql job finish >> ${WORKROOT}/logs/${DAY}/wf.log
 #4.oozie任务启动
 echo `date`  oozie job begin >> ${WORKROOT}/logs/${DAY}/wf.log
 
-oozie job -oozie http://${OOZIE_SERVER}:11443/oozie/ -config ${WORKROOT}/wf/job.properties  -run -verbose -Dday=$DAY -Dyesterday=$yesterday -Dtomorrow=$tomorrow
+oozie job -oozie https://${OOZIE_SERVER}:11443/oozie/ -config ${WORKROOT}/wf/job.properties  -run -verbose -Dday=$DAY -Dyesterday=$yesterday -Dtomorrow=$tomorrow
 
 end_time=`date +%s`
 process_time=$((${end_time}-${begin_time}))
