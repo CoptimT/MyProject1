@@ -10,10 +10,10 @@ CREATE TABLE IF NOT EXISTS dwv_yzb.dwv_yzb_channel_spread_statistic(
   yesterday_update bigint comment '昨天的升级',
   createtime bigint comment '记录创建时间',
   updatetime bigint comment '最近更新时间'
-) partitioned by (day string);
+) partitioned by (dt string);
 
 
-insert overwrite table dwv_yzb.dwv_yzb_channel_spread_statistic partition (day='${day}')
+insert overwrite table dwv_yzb.dwv_yzb_channel_spread_statistic partition (dt='${day}')
 select '${day}',app,spread_name,sum(today_add) today_add,sum(today_update) today_update,
        sum(yesterday_add) yesterday_add,sum(yesterday_update) yesterday_update,
        concat(nvl(unix_timestamp(),0),'000'),concat(nvl(unix_timestamp(),0),'000') from (
