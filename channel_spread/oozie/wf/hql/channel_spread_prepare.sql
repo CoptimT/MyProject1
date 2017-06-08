@@ -21,7 +21,8 @@
 drop table if exists temp_yzb.tmp_channel_spread_${day};
 -- 1.1.2 执行查询
 create table temp_yzb.tmp_channel_spread_${day} as
-select app,idfa,spread_name from dwv_yzb.dwv_yzb_channel_spread where (dt='${day}' or (dt='${tomorrow}' and hour='00')) and day='${day}' group by app,idfa,spread_name;
+select app,idfa,spread_name from dwv_yzb.dwv_yzb_channel_spread where (dt='${day}' or (dt='${tomorrow}' and hour='00')) and day='${day}'
+and spread_name is not null and idfa!='00000000-0000-0000-0000-000000000000' group by app,idfa,spread_name;
 
 
 -- 1.2 关联查询IDFA出现次数和最新出现时间
