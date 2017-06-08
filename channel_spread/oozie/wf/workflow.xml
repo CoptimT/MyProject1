@@ -1,8 +1,21 @@
-<workflow-app xmlns="uri:oozie:workflow:0.2" name="channel-spread-wf">
+<workflow-app xmlns="uri:oozie:workflow:0.3" name="channel-spread-wf">
+	<credentials>
+		<credential name='my_auth' type='hcat'>
+			<property>
+				<name>hcat.metastore.uri</name>
+				<value>${metastoreServer}</value>
+			</property>
+			<property>
+				<name>hcat.metastore.principal</name>
+				<value>hive/_HOST@YIXIA.COM</value>
+			</property>
+		</credential>
+	</credentials>
+
 	<start to="hive_channel_spread_prepare_node"/>
 
 	<!-- 导入MySQL表 因为集群白名单未开，不能导表 -->
-	<action name="import_xk_member_device_faid_node">
+	<action name="import_xk_member_device_faid_node" cred="my_auth">
 		<sqoop xmlns="uri:oozie:sqoop-action:0.2">
 			<job-tracker>${jobTracker}</job-tracker>
 			<name-node>${nameNode}</name-node>
@@ -14,7 +27,7 @@
 	</action>
 
 	<!-- 1 数据准备，创建中间表 -->
-	<action name="hive_channel_spread_prepare_node">
+	<action name="hive_channel_spread_prepare_node" cred="my_auth">
 		<hive xmlns="uri:oozie:hive-action:0.2">
 			<job-tracker>${jobTracker}</job-tracker>
 			<name-node>${nameNode}</name-node>
@@ -28,7 +41,7 @@
 	</action>
 
 	<!-- 2 数据统计 -->
-	<action name="hive_channel_spread_statistic_node">
+	<action name="hive_channel_spread_statistic_node" cred="my_auth">
 		<hive xmlns="uri:oozie:hive-action:0.2">
 			<job-tracker>${jobTracker}</job-tracker>
 			<name-node>${nameNode}</name-node>
@@ -42,7 +55,7 @@
 	</action>
 
 	<!-- 3 删除中间表 -->
-	<action name="hive_channel_spread_drop_node">
+	<action name="hive_channel_spread_drop_node" cred="my_auth">
 		<hive xmlns="uri:oozie:hive-action:0.2">
 			<job-tracker>${jobTracker}</job-tracker>
 			<name-node>${nameNode}</name-node>
@@ -55,7 +68,7 @@
 	</action>
 
 <!-- 1.2 流水对账 - 差错数据导出 -->
-<action name="balance_serial_sqoop_node">
+<action name="balance_serial_sqoop_node" cred="my_auth">
 	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
 		<job-tracker>${jobTracker}</job-tracker>
 		<name-node>${nameNode}</name-node>
