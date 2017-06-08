@@ -31,8 +31,9 @@ and spread_name is not null and idfa!='00000000-0000-0000-0000-000000000000' gro
 drop table if exists temp_yzb.tmp_channel_spread_mid_${day};
 -- 1.2.2 执行查询
 create table temp_yzb.tmp_channel_spread_mid_${day} as
-select t.app,t.spread_name,t.idfa,count(1) cnt,coalesce(from_unixtime(max(t.createtime),'yyyyMMdd'),'') last_date from (
-    select b.app,b.idfa,b.spread_name,a.createtime from dwv_yzb.dwv_yzb_xk_member_device_faid a
+select t.app,t.spread_name,t.idfa,count(1) cnt,coalesce(from_unixtime(max(t.createtime),'yyyyMMdd'),'') last_date
+from (
+    select b.app,b.spread_name,b.idfa,a.createtime from dwv_yzb.dwv_yzb_xk_member_device_faid a
     left join temp_yzb.tmp_channel_spread_${day} b on(a.faid=b.idfa)
 ) t group by t.app,t.spread_name,t.idfa;
 
