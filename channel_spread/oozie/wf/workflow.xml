@@ -63,60 +63,60 @@
 			<script>hql/channel_spread_drop.sql</script>
 			<param>day=${day}</param>
 		</hive>
-		<ok to="end" />
+		<ok to="export_channel_spread_node" />
 		<error to="sendmail" />
 	</action>
 
-<!-- 1.2 流水对账 - 差错数据导出 -->
-<action name="balance_serial_sqoop_node" cred="my_auth">
-	<sqoop xmlns="uri:oozie:sqoop-action:0.2">
-		<job-tracker>${jobTracker}</job-tracker>
-		<name-node>${nameNode}</name-node>
-		<job-xml>my-queue-default.xml</job-xml>
-		<arg>export</arg>
-		<arg>--connect</arg>
-		<arg>${jdbcRes}</arg>
-		<arg>--username</arg>
-		<arg>${usernameRes}</arg>
-		<arg>--password</arg>
-		<arg>${passwordRes}</arg>
-		<arg>--table</arg>
-		<arg>wallet_balance_serial</arg>
-		<arg>--columns</arg>
-		<arg>serialid,wallet_id,balance_time,deal_time,firstcategory,secondcategory,memberid,goldcoin_last,goldcoin,curgoldcoin,goldcoin_cz,diamond_last,diamond,curdiamond,diamond_cz,log_date</arg>
-		<arg>-m</arg>
-		<arg>2</arg>
-		<arg>--export-dir</arg>
-		<arg>${hivehouse}/yzb_snapshot_stat_day_balance_serial/day=${day}</arg>
-		<arg>--input-fields-terminated-by</arg>
-		<arg>\001</arg>
-		<arg>--update-key</arg>
-		<arg>log_date,wallet_id</arg>
-		<arg>--update-mode</arg>
-		<arg>allowinsert</arg>
-	</sqoop>
-	<ok to="wallet_batch_joining"/>
-	<error to="sendmail"/>
-</action>
+	<!-- 4 数据导出 -->
+	<action name="export_channel_spread_node" cred="my_auth">
+		<sqoop xmlns="uri:oozie:sqoop-action:0.2">
+			<job-tracker>${jobTracker}</job-tracker>
+			<name-node>${nameNode}</name-node>
+			<job-xml>my-queue-default.xml</job-xml>
+			<arg>export</arg>
+			<arg>--connect</arg>
+			<arg>${jdbcRes}</arg>
+			<arg>--username</arg>
+			<arg>${usernameRes}</arg>
+			<arg>--password</arg>
+			<arg>${passwordRes}</arg>
+			<arg>--table</arg>
+			<arg>dwv_yzb_channel_spread_statistic</arg>
+			<arg>--columns</arg>
+			<arg>stat_dt,app,channel,today_add,today_update,yesterday_add,yesterday_update,createtime,updatetime</arg>
+			<arg>-m</arg>
+			<arg>2</arg>
+			<arg>--export-dir</arg>
+			<arg>${hivehouse}/dwv_yzb.db/dwv_yzb_channel_spread_statistic/dt=${day}</arg>
+			<arg>--input-fields-terminated-by</arg>
+			<arg>\001</arg>
+			<arg>--update-key</arg>
+			<arg>stat_dt,app,channel</arg>
+			<arg>--update-mode</arg>
+			<arg>allowinsert</arg>
+		</sqoop>
+		<ok to="end"/>
+		<error to="sendmail"/>
+	</action>
 
-<!-- 发送日志：send_mail_node -->
-<action name="sendmail">
-	<email xmlns="uri:oozie:email-action:0.1">
-		<to>${toEmail}</to>
-		<cc>${ccEmail}</cc>
-		<subject>[OOZIE FAILED] ${wf:id()}</subject>
-		<body>
-			${metastoreServer},Task failed!
-			wfid:${wf:id()}
-			Stat DATE:${year}-${month}-${day},
-			Error message:[${wf:errorMessage(wf:lastErrorNode())}].
-		</body>
-	</email>
-	<ok to="fail"/>
-	<error to="fail"/>
-</action>
-<kill name="fail">
-	<message>failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
-</kill>
-<end name="end" />
+	<!-- 发送日志：send_mail_node -->
+	<action name="sendmail">
+		<email xmlns="uri:oozie:email-action:0.1">
+			<to>${toEmail}</to>
+			<cc>${ccEmail}</cc>
+			<subject>[OOZIE FAILED] ${wf:id()}</subject>
+			<body>
+				${metastoreServer},Task failed!
+				wfid:${wf:id()}
+				Stat DATE:${year}-${month}-${day},
+				Error message:[${wf:errorMessage(wf:lastErrorNode())}].
+			</body>
+		</email>
+		<ok to="fail"/>
+		<error to="fail"/>
+	</action>
+	<kill name="fail">
+		<message>failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+	</kill>
+	<end name="end" />
 </workflow-app>
