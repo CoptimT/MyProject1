@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS dwv_yzb.dwv_yzb_channel_spread_statistic(
   yesterday_update bigint comment '昨天的升级',
   createtime bigint comment '记录创建时间',
   updatetime bigint comment '最近更新时间'
-) partitioned by (dt string);
+) partitioned by (dt string)
+stored as textfile;
 
 
 insert overwrite table dwv_yzb.dwv_yzb_channel_spread_statistic partition (dt='${day}')
