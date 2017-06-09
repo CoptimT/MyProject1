@@ -118,7 +118,7 @@ fi
 $run_jar $hdfs_source_dir/$cdate/$chour ${hive_warehouse}/${hive_db_name}.db/${hive_tb_name}/dt=${cdate}/hour=${chour} 1
 if [ $? -ne 0 ]
 then
-    sendmessage "wechat,mail" "error" "yzb api_playback extract error(${cdate}:${chour})" "yzb api_playback extract job:${run_extract_job_name} failed!"  ${mail_extract}
+    sendmessage "mail" "error" "yzb api_playback extract error(${cdate}:${chour})" "yzb api_playback extract job:${run_extract_job_name} failed!"  ${mail_extract}
   echo "ExtractError---- SourceDir:(${hdfs_source_dir})/${cdate}/${chour} TargetDir: ${hive_warehouse}/${hive_db_name}.db/${hive_tb_name}/dt=${cdate}/hour=${chour}"
   exit 1
 fi

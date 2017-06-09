@@ -95,7 +95,7 @@ fi
 
 if [ $? -ne 0 ]
 then
-  sendmessage "wechat,mail" "error" "yzb collect $kafka_topic getoffset test error($cdate:$chour)" "yzb collect $kafka_topic getoffset test job:${run_offset_job_name} failed!" zhangxiangwei
+  sendmessage "mail" "error" "yzb collect $kafka_topic getoffset test error($cdate:$chour)" "yzb collect $kafka_topic getoffset test job:${run_offset_job_name} failed!" zhangxiangwei
   echo "GetOffsetError ---- offsetDir: ${kafka_offset_dir}/${cdate}/$chour/_SUCCESS, Please Check!"
   hdfs dfs -rm -r ${kafka_offset_dir}/_BEGINRUNNING.${cdate}.${chour}
   exit 1
@@ -140,7 +140,7 @@ fi
 
 if [ $? -ne 0 ]
 then
-  sendmessage "wechat,mail" "error" "yzb collect $kafka_topic kafka2hdfs test error(${cdate}:${chour})" "yzb collect $kafka_topic kafka2hdfs test job:${run_collect_job_name} failed!" zhangxiangwei
+  sendmessage "mail" "error" "yzb collect $kafka_topic kafka2hdfs test error(${cdate}:${chour})" "yzb collect $kafka_topic kafka2hdfs test job:${run_collect_job_name} failed!" zhangxiangwei
   echo "yzb collect yzb_api kafka2hdfs error(${cdate}:${chour}), Please Check!"
   exit 1
 fi
