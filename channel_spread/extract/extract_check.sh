@@ -20,7 +20,7 @@ logfile=${DIR}/../logs/extract_check_${cdate}.log
 hours="00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23"
 for hour in $hours
 do
-  if $(hadoop fs -test -d ${hive_warehouse}/${hive_db_name}.db/${hive_tb_name}/dt=${cdate}/hour=${hour})
+  if $(hadoop fs -test -e ${hive_warehouse}/${hive_db_name}.db/${hive_tb_name}/dt=${cdate}/hour=${hour}/_SUCCESS)
   then
     echo ${cdate}-${hour} ok >> ${logfile}
   else
