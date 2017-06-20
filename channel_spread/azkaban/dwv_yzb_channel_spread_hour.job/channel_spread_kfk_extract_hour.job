@@ -1,0 +1,4 @@
+#渠道推广
+type=command
+dependencies=parameter,channel_spread_kfk_collect_hour
+command=sh ${base.script.dir}/${project.script.dir}/extract/channel_spread_kfk_extract_hour.sh ${cdate} ${chour}

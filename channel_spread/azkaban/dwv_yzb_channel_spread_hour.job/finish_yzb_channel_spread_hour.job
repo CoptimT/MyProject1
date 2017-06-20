@@ -1,0 +1,3 @@
+type=command
+command=echo 'Job channel_spread_kfk_extract_hour finished!'
+dependencies=channel_spread_kfk_extract_hour

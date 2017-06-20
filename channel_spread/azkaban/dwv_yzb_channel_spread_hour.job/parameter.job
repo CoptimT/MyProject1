@@ -1,0 +1,3 @@
+#传参脚本
+type=command
+command=sh parameter.sh ${cdate} ${chour} ${must_run}

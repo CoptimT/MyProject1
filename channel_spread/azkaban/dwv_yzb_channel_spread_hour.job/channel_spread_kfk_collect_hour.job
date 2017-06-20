@@ -1,0 +1,3 @@
+type=command
+command=sh ${base.script.dir}/${project.script.dir}/collect/channel_spread_kfk_collect_hour.sh ${cdate} ${chour} ${must_run}
+dependencies=parameter
