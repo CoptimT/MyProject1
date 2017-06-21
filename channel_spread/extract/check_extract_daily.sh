@@ -16,7 +16,11 @@ then
    cdate=$1
 fi
 
-logfile=${DIR}/../logs/extract_check_${cdate}.log
+logfile=${DIR}/../job/check_extract_${cdate}.log
+echo ---------------------------------------------- >> ${logfile}
+echo `date '+%Y-%m-%d %H:%M:%S'` cdate=${cdate} check daily >> ${logfile}
+echo ---------------------------------------------- >> ${logfile}
+
 hours="00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23"
 for hour in $hours
 do
@@ -28,4 +32,5 @@ do
     sh ${DIR}/channel_spread_kfk_extract_hour.sh ${cdate} ${hour} >> ${logfile} 2>&1
   fi
 done
+echo `date '+%Y-%m-%d %H:%M:%S'` check finish. >> ${logfile}
 
