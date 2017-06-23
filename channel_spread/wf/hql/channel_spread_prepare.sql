@@ -26,10 +26,16 @@ group by app,spread_name,idfa;
 
 -- 1.2 关联查询IDFA出现次数和最新出现时间
 
--- 1.2.1 删除中间临时表
-drop table if exists temp_yzb.tmp_channel_spread_mid_${day};
+CREATE TABLE IF NOT EXISTS dwv_yzb.dwv_yzb_channel_spread_detail(
+  app          string comment 'app',
+  spread_name  string comment '渠道',
+  idfa         string comment 'idfa',
+  first_date   string comment '第一次激活日期',
+  last_date    string comment '最后一次激活日期'
+) partitioned by (dt string);
+
 -- 1.2.2 执行查询
-create table temp_yzb.tmp_channel_spread_mid_${day} as
+insert overwrite table dwv_yzb.dwv_yzb_channel_spread_detail partition (dt='${day}')
 select t.app,t.spread_name,t.idfa,coalesce(from_unixtime(min(t.createtime),'yyyyMMdd'),'') first_date,coalesce(from_unixtime(max(t.createtime),'yyyyMMdd'),'') last_date
 from (
     select b.app,b.spread_name,b.idfa,a.createtime
