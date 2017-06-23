@@ -5,10 +5,15 @@ select app,spread_name,idfa from dwv_yzb.dwv_yzb_channel_spread where (dt='${day
 and app is not null and spread_name is not null and idfa!='00000000-0000-0000-0000-000000000000' and idfa is not null
 group by app,spread_name,idfa;
 
+CREATE TABLE IF NOT EXISTS dwv_yzb.dwv_yzb_channel_spread_detail(
+  app          string comment 'app',
+  spread_name  string comment '渠道',
+  idfa         string comment 'idfa',
+  first_date   string comment '第一次激活日期',
+  last_date    string comment '最后一次激活日期'
+) partitioned by (dt string);
 
-drop table if exists temp_yzb.tmp_channel_spread_mid_${day};
-
-create table temp_yzb.tmp_channel_spread_mid_${day} as
+insert overwrite table dwv_yzb.dwv_yzb_channel_spread_detail partition (dt='${day}')
 select t.app,t.spread_name,t.idfa,coalesce(from_unixtime(min(t.createtime),'yyyyMMdd'),'') first_date,coalesce(from_unixtime(max(t.createtime),'yyyyMMdd'),'') last_date
 from (
     select b.app,b.spread_name,b.idfa,a.createtime
