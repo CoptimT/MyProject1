@@ -19,6 +19,14 @@ from (
     select b.app,b.spread_name,b.idfa,a.createtime
     from (
         select faid,createtime from dwv_yzb.dwv_yzb_xk_member_device_faid where createtime<unix_timestamp('${tomorrow}','yyyyMMdd')
-    ) a join temp_yzb.tmp_channel_spread_${day} b
-    on(a.faid=b.idfa)
+    ) a join (
+        select app,spread_name,idfa from temp_yzb.tmp_channel_spread_${day} where app='yzb'
+    ) b on(a.faid=b.idfa)
+    union all
+    select d.app,d.spread_name,d.idfa,c.createtime
+    from (
+        select faid,floor(createtime/1000) as createtime from dwv_yzb.dwv_yzb_idfa_active where app='mp' and floor(createtime/1000)<unix_timestamp('${tomorrow}','yyyyMMdd')
+    ) c join (
+        select app,spread_name,idfa from temp_yzb.tmp_channel_spread_${day} where app='mp'
+    ) d on(c.faid=d.idfa)
 ) t group by t.app,t.spread_name,t.idfa;
